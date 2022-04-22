@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>security</title>
+	<script src="https://cdn.bootcdn.net/ajax/libs/axios/0.26.1/axios.js"></script>
+    <script src="https://cdn.bootcdn.net/ajax/libs/spark-md5/3.0.2/spark-md5.js"></script>
+    <style type="text/css">
+        .container .api-token-wrapper
+        {
+            margin-bottom: 20px;
+        }
+        .container .request-wrapper
+        {
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+	<div class="container">
+        <div>
+            <h2>API Token Usage</h2>
+
+            <div class="api-token-wrapper">
+                <strong>Click to get api token</strong>
+                <button id="api-token-btn">click</button>
+            </div>
+
+            <div class="request-wrapper">
+                <strong>Page size:</strong>
+                <input id="size-input" type="number" name="size" value="1" />
+                <strong>Page number:</strong>
+                <input id="page-input" type="number" name="page" value="1" />
+                <button id="data-btn">click</button>
+            </div>
+        </div>
+        <hr />
+        <div>
+            <h2>User Token Usage</h2>
+
+            <div class="request-wrapper">
+                <strong>Username:</strong>
+                <input id="un-input" type="text" name="un" value="zhangsan" />
+                <strong>Password:</strong>
+                <input id="pw-input" type="password" name="pw" value="123456" />
+                <button id="user-token-btn">click</button>
+            </div>
+
+            <div class="order-wrapper">
+                <strong>Create an order</strong>
+                <strong>Order id:</strong>
+                <input id="order-id-input" type="number" name="orderId" value="1" />
+                <button id="order-btn">click</button>
+            </div>
+        </div>
+	</div>
+</body>
+<script type="text/javascript">
+    const apiBtn = document.getElementById("api-token-btn");
+    const usrBtn = document.getElementById("user-token-btn");
+    const dataBtn = document.getElementById("data-btn");
+    const orderBtn = document.getElementById("order-btn");
+    
+    const sizeInput = document.getElementById("size-input");
+    const pageInput = document.getElementById("page-input");
+    const unInput = document.getElementById("un-input");
+    const pwInput = document.getElementById("pw-input");
+    const orderInput = document.getElementById("order-id-input");
+
+    // The app id is unique for every request client.
+    // The secret is used to sign to ensure the security of the request.
+    // 
+    // Usually, the app id and secret is applied in other api.
+    // To acquire the security of the secret, using `https` is an idea.
+    const appId = "IPAD-L3GZ89D";
+    const secret = "123456";
+
+    let apiToken = "";
+    let userToken = "";
+
+    apiBtn.addEventListener("click", async function() {
+        // get current timestamp
+        let ts = (new Date()).getTime();
+
+        // sort all payload according to the `Unicode`
+        // you can add other payload such as salt to futher ensure the security
+        let payload = `appId${appId}secret${secret}ts${ts}`;
+
+        // use md5 to get digest of the payload
+        let sign = SparkMD5.hash(payload);
+
+        // then send request with the sign
+        try {
+            const result = await axios.get(`http://localhost:9090/apitoken?appId=${appId}&sign=${sign}&ts=${ts}`);
+            if(result.status === 200 && result.data.code === 0) {
+                apiToken = result.data.details;
+                alert(`your api token is ${apiToken}`);
+            }
+            else {
+                alert(`something wrong: ${result.data.message}`);
+            }
+        }
+        catch(e) {
+            console.error(e);
+        }
+    });
+
+    dataBtn.addEventListener("click", async function() {
+        let size = sizeInput.value;
+        let pagenum = pageInput.value;
+
+        try {
+            const result = await axios.get(`http://localhost:9090/api/data?size=${size}&pagenum=${pagenum}`, {
+                headers: {
+                    "Authorization": apiToken
+                }
+            });
+
+            if(result.status === 200 && result.data.code === 0) {
+                alert("Please open the console to look for details");
+                console.log(result.data.details);
+            }
+            else {
+                alert(`something wrong: ${result.data.message}`);
+            }
+        }
+        catch(e) {
+            console.error(e);
+        }
+    });
+
+    usrBtn.addEventListener("click", async function() {
+        let un = unInput.value;
+        let pw = pwInput.value;
+
+        if(un.length <= 0 || pw.length <= 0) {
+            alert("username or password can not be empty");
+            return;
+        }
+
+        // get current timestamp
+        let ts = (new Date()).getTime();
+
+        const form = new FormData();
+        form.append("username", un);
+        form.append("password", pw);
+        form.append("ts", ts);
+
+        // then send request with the sign
+        try {
+            const result = await axios.post("http://localhost:9090/usrtoken", form);
+            if(result.status === 200 && result.data.code === 0) {
+                userToken = result.data.details;
+                alert(`your user token is ${userToken}`);
+            }
+            else {
+                alert(`something wrong: ${result.data.message}`);
+            }
+        }
+        catch(e) {
+            console.error(e);
+        }
+    });
+
+    orderBtn.addEventListener("click", async function() {
+        let un = unInput.value;
+        let orderId = orderInput.value;
+
+        if(un.length <= 0 || orderId.length <= 0) {
+            alert("username or orderId can not be empty");
+            return;
+        }
+
+        // get current timestamp
+        let ts = (new Date()).getTime();
+
+        // get the digest of the payload
+        let payload = `orderId${orderId}ts${ts}username${un}`;
+
+        // use md5 to get digest of the payload
+        let sign = SparkMD5.hash(payload);
+
+        const form = new FormData();
+        form.append("username", un);
+        form.append("orderId", orderId);
+        form.append("ts", ts);
+
+        // then send request with the sign
+        try {
+            const result = await axios.post(`http://localhost:9090/usr/order?sign=${sign}`, form, {
+                headers: {
+                    "Authorization": userToken
+                }
+            });
+            if(result.status === 200 && result.data.code === 0) {
+                alert("success");
+            }
+            else {
+                alert(`something wrong: ${result.data.message}`);
+            }
+        }
+        catch(e) {
+            console.error(e);
+        }
+    });
+</script>
+</html>
