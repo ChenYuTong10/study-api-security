@@ -68,7 +68,7 @@ The **app secret** is one of the *sign* components. It should be stored carefull
 
 Usually, **https** can guarantee the **appid** and **app secret**. But it doesn't' mean to expose the both keys directly in page.
 
-The more details about *API Token* can see on [main.go](https://github.com/ChenYuTong10/study-api/blob/master/main.go#L81).
+The more details about *API Token* can see on [main.go](https://github.com/ChenYuTong10/study-api-security/blob/master/main.go#L81).
 
 ### User Token
 
@@ -76,7 +76,7 @@ The more details about *API Token* can see on [main.go](https://github.com/ChenY
     
 To get *User Token*, you need to send the *username* and *password* to the server like login operation.
 
-The more details about *User Token* can see on [main.go](https://github.com/ChenYuTong10/study-api/blob/master/main.go#L162).
+The more details about *User Token* can see on [main.go](https://github.com/ChenYuTong10/study-api-security/blob/master/main.go#L162).
 
 ## More About Other
 
